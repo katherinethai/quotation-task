@@ -18,12 +18,15 @@ with open('res1.txt','r') as f:
 doc = nlp(text)
 
 
-# query = 'Remember, I am not recording the vision of a madman.'
-# choices = [sent for sent in doc.sents]
-#
-# matches = process.extract(query, choices, limit=1)
-# print(len(matches))
-# print(matches[0][0].start,matches[0][0].end)
-# for match in matches:
-#     # print(doc[match[0].start-10:match[0].end+10])
-#     print(match)
+query1 = 'I had desired it with an ardour that far exceeded moderation; but now that I had finished, the beauty of the dream vanished, and breathless horror and disgust filled my heart.'
+query2 = 'Unable to endure the aspect of the being I had created, I rushed out of the room, and continued Vol. I.-29 e442 MISCELLANIES BY SIR WALTER SCOTT. a long time traversing my bed-chamber, unable to compose my mind to sleep.'
+choices = [sent for sent in doc.sents]
+
+matches = process.extract(query1, choices, limit=1)
+print(matches[0][0].start,matches[0][0].end)
+for match in matches:
+    print(doc[match[0].start:match[0].end])
+matches = process.extract(query2, choices, limit=1)
+print(matches[0][0].start,matches[0][0].end)
+for match in matches:
+    print(doc[match[0].start:match[0].end])

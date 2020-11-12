@@ -31,6 +31,7 @@ class Extractor():
         if not os.path.exists(os.path.join(self.book_dir, self.save_to_folder)):
             os.makedirs(os.path.join(self.book_dir, self.save_to_folder))
         for result in self.results_filenames:
+            indices = {}
             res_filename = os.path.join(self.book_dir, self.results_dir, result)
             with open(res_filename,'r') as f:
                 text = f.read()
@@ -41,15 +42,21 @@ class Extractor():
                 query = book_sent
                 matches = process.extract(query, choices, limit=1)
                 for match in matches:
-                    filename = self.book_dir + '-' + str(self.window_count) + '.txt'
-                    path = os.path.join(self.book_dir, self.save_to_folder, filename)
                     span = match[0]
                     score = match[1]
                     if score > 90:
-                        self.window_count += 1
-                        with open(path,'w') as writer:
-                            window = doc[span.start-100:span.end+100].as_doc().text
-                            writer.write(window)
+                        if span.start in indices.keys():
+                            indices[span.end] = indices[span.start]
+                            indices.pop(span.start)
+                        else:
+                            indices[span.end] = span.start
+            for end, start in indices.items():
+                self.window_count += 1
+                filename = self.book_dir + '-' + str(self.window_count) + '.txt'
+                path = os.path.join(self.book_dir, self.save_to_folder, filename)
+                with open(path,'w') as writer:
+                    window = doc[start-100:end+100].as_doc().text
+                    writer.write(window)
 
 frank_extract = Extractor(book_dir='frankenstein')
 frank_extract.extract_windows()
