@@ -3,6 +3,7 @@ import os
 from spacy.lang.en import English
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
+import multiprocessing as mp
 
 class Extractor():
     def __init__(self, book_dir, save_to_folder = 'windows'):
@@ -15,6 +16,11 @@ class Extractor():
         self.save_to_folder = save_to_folder
         self.window_count = 0
 
+    def txt_file_to_doc(self, filename):
+        with open(filename,'r') as f:
+            text = f.read()
+        return self.nlp(text)
+
     def get_book_sentences(self):
         with open(os.path.join(self.book_dir, self.book_filename),'r') as f:
             text = f.readlines()
@@ -22,41 +28,25 @@ class Extractor():
 
     def get_nlp(self):
         nlp = English()  # just the language with no model (idk this is spaCy stuff)
-        nlp.max_length = 3000000
+        nlp.max_length = 5000000
         sentencizer = nlp.create_pipe("sentencizer")
         nlp.add_pipe(sentencizer)
         return nlp
 
-    def extract_windows(self):
-        if not os.path.exists(os.path.join(self.book_dir, self.save_to_folder)):
-            os.makedirs(os.path.join(self.book_dir, self.save_to_folder))
-        for result in self.results_filenames:
-            indices = {}
-            res_filename = os.path.join(self.book_dir, self.results_dir, result)
-            with open(res_filename,'r') as f:
-                text = f.read()
-            doc = self.nlp(text)
-            choices = [sent for sent in doc.sents]
-            for book_sent in self.book_sentences:
-                print(book_sent)
-                query = book_sent
-                matches = process.extract(query, choices, limit=1)
-                for match in matches:
-                    span = match[0]
-                    score = match[1]
-                    if score > 90:
-                        if span.start in indices.keys():
-                            indices[span.end] = indices[span.start]
-                            indices.pop(span.start)
-                        else:
-                            indices[span.end] = span.start
-            for end, start in indices.items():
-                self.window_count += 1
-                filename = self.book_dir + '-' + str(self.window_count) + '.txt'
-                path = os.path.join(self.book_dir, self.save_to_folder, filename)
-                with open(path,'w') as writer:
-                    window = doc[start-100:end+100].as_doc().text
-                    writer.write(window)
+    def find_fuzzy_match(self, book_sent, secondary_source):
+        choices = [sent for sent in doc.sents]
+        match = process.extractOne(book_sent, choices, scorer=fuzzwuzz.base_ratio, score_cutoff=90)
+        span = match[0]
+
+
+    def extract_fuzzy_window_parallel(self):
+        pool = mp.Pool(mp.cpu_count()/2)
+        results = [pool.apply_asynch(self.extract_windows, args=())]
+
+        def cube(x):
+    return x**3
+pool = mp.Pool(processes=4)
+results = [pool.apply(cube, args=(x,)) for x in range(1,7)]
 
 frank_extract = Extractor(book_dir='frankenstein')
-frank_extract.extract_windows()
+secondary_source = frank_extract.txt_file_to_doc('frankenstein/frankenstein_docs/res0.txt')
